@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+        :root {
+            --bg-color: white;
+            --text-color: black;
+            --border-color: black;
+            --header-bg: black;
+            --header-text: white;
+        }
+        .dark {
+            --bg-color: #111827;
+            --text-color: white;
+            --border-color: white;
+            --header-bg: white;
+            --header-text: black;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .border-theme {
+            border-color: var(--border-color);
+        }
+        .header-bg {
+            background-color: var(--header-bg);
+        }
+        .header-text {
+            color: var(--header-text);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    {% if user.is_authenticated %}
+    <div class="header-bg header-text py-2 px-4 border-b-2 border-theme">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <p class="text-sm">You're logged in as {{ user.username }}</p>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'site_edit' app.slug %}" class="text-sm font-medium hover:text-gray-300 dark:hover:text-gray-700">Edit Site</a>
+                <a href="{% url 'dashboard' %}" class="text-sm font-medium hover:text-gray-300 dark:hover:text-gray-700">Back to App Hub</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <main>
+        {{ app_content|safe }}
+    </main>
+    <script>
+        // Dark mode init
+        const savedDarkMode = localStorage.getItem('darkMode');
+        if (savedDarkMode === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</html>

@@ -3,67 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Plugin Manager{% endblock %}</title>
+    <title>{% block title %}App Hub{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
             font-family: 'Poppins', sans-serif;
         }
+        :root {
+            --bg-color: white;
+            --text-color: black;
+            --border-color: black;
+            --shadow-color: black;
+            --muted-color: #6b7280;
+            --button-bg: white;
+            --button-text: black;
+            --input-border: black;
+            --alert-success-bg: #dcfce7;
+            --alert-error-bg: #fee2e2;
+        }
+        .dark {
+            --bg-color: #111827;
+            --text-color: white;
+            --border-color: white;
+            --shadow-color: white;
+            --muted-color: #9ca3af;
+            --button-bg: #111827;
+            --button-text: white;
+            --input-border: white;
+            --alert-success-bg: #166534;
+            --alert-error-bg: #7f1d1d;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .border-theme {
+            border-color: var(--border-color);
+        }
+        .text-theme {
+            color: var(--text-color);
+        }
+        .text-muted {
+            color: var(--muted-color);
+        }
+        .bg-theme {
+            background-color: var(--bg-color);
+        }
+        .shadow-theme {
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+        }
+        .button-theme {
+            border: 2px solid var(--border-color);
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+            transition: all 150ms ease;
+        }
+        .button-theme:hover {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+        .input-theme {
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .input-theme:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #fde047;
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen">
     <div class="flex h-screen flex-col md:flex-row">
         <!-- Mobile Header -->
-        <header class="md:hidden bg-white shadow-md p-4 flex items-center justify-between z-50">
-            <h1 class="text-xl font-bold text-gray-800">Plugin Manager</h1>
-            <button id="mobileMenuBtn" class="text-gray-700 hover:text-gray-900 focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
+        <header class="md:hidden bg-theme border-b border-theme p-4 flex items-center justify-between z-50">
+            <h1 class="text-xl font-bold text-theme">App Hub</h1>
+            <div class="flex items-center gap-4">
+                <button id="darkModeToggleMobile" class="text-theme hover:text-muted focus:outline-none">
+                    <!-- Sun Icon -->
+                    <svg id="sunIconMobile" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <!-- Moon Icon -->
+                    <svg id="moonIconMobile" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+                <button id="mobileMenuBtn" class="text-theme hover:text-muted focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-white shadow-md md:relative fixed inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
-            <div class="p-4 border-b">
-                <h1 class="text-xl font-bold text-gray-800">Plugin Manager</h1>
+        <aside id="sidebar" class="w-64 bg-theme border-r border-theme md:relative fixed inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="p-4 border-b border-theme flex items-center justify-between">
+                <h1 class="text-xl font-bold text-theme">App Hub</h1>
+                <button id="darkModeToggleSidebar" class="text-theme hover:text-muted focus:outline-none hidden md:block">
+                    <!-- Sun Icon -->
+                    <svg id="sunIconSidebar" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <!-- Moon Icon -->
+                    <svg id="moonIconSidebar" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
             </div>
             <nav class="p-4 overflow-y-auto h-[calc(100vh-200px)]">
-                <ul class="space-y-2">
+                <ul class="space-y-2 mb-6">
                     <li>
-                        <a href="{% url 'plugin_list' %}" class="block px-4 py-2 rounded-md hover:bg-gray-100 text-gray-700">Dashboard</a>
-                    </li>
-                    <li>
-                        <a href="{% url 'plugin_upload' %}" class="block px-4 py-2 rounded-md hover:bg-gray-100 text-gray-700">Upload Plugin</a>
+                        <a href="{% url 'dashboard' %}" class="block px-4 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme font-medium">
+                            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            Dashboard
+                        </a>
                     </li>
                 </ul>
-                {% if plugins %}
-                <div class="mt-8">
-                    <h2 class="text-sm font-semibold text-gray-500 uppercase mb-2">Installed Plugins</h2>
+
+                <div class="mb-6">
+                    <h2 class="text-sm font-semibold text-muted uppercase mb-2">Plugins</h2>
                     <ul class="space-y-1">
-                        {% for plugin in plugins %}
-                            {% if plugin.is_active %}
-                            <li>
-                                <a href="{% url 'plugin_detail' plugin.slug %}" class="block px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700 text-sm">
-                                    {% if plugin.logo %}
-                                        <img src="{{ plugin.logo.url }}" alt="{{ plugin.name }}" class="w-5 h-5 inline-block mr-2">
-                                    {% endif %}
-                                    {{ plugin.name }}
-                                </a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
+                        <li>
+                            <a href="{% url 'plugin_upload' %}" class="block px-3 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme text-sm">
+                                <svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Upload Plugin
+                            </a>
+                        </li>
+                        {% if plugins %}
+                            {% for app in plugins %}
+                                {% if app.is_active %}
+                                <li>
+                                    <a href="{% url 'plugin_detail' app.slug %}" class="block px-3 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme text-sm">
+                                        {% if app.logo %}
+                                            <img src="{{ app.logo.url }}" alt="{{ app.name }}" class="w-5 h-5 inline-block mr-2">
+                                        {% else %}
+                                            <svg class="w-4 h-4 inline-block mr-2 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                            </svg>
+                                        {% endif %}
+                                        {{ app.name }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
                     </ul>
                 </div>
-                {% endif %}
+
+                <div class="mb-6">
+                    <h2 class="text-sm font-semibold text-muted uppercase mb-2">Sites</h2>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="{% url 'site_upload' %}" class="block px-3 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme text-sm">
+                                <svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Upload Site
+                            </a>
+                        </li>
+                        {% if sites %}
+                            {% for app in sites %}
+                                {% if app.is_active %}
+                                <li>
+                                    <a href="{% url 'site_edit' app.slug %}" class="block px-3 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme text-sm">
+                                        {% if app.logo %}
+                                            <img src="{{ app.logo.url }}" alt="{{ app.name }}" class="w-5 h-5 inline-block mr-2">
+                                        {% else %}
+                                            <svg class="w-4 h-4 inline-block mr-2 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9-3-9m-9 9a9 9 0 019-9"></path>
+                                            </svg>
+                                        {% endif %}
+                                        {{ app.name }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
             </nav>
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-theme bg-theme">
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button type="submit" class="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+                    <button type="submit" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
                         Logout
                     </button>
                 </form>
@@ -74,54 +206,53 @@
         <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-auto">
-            <div class="p-4 md:p-8">
-                <!-- Messages -->
-                {% if messages %}
-                    <div class="mb-6 space-y-4">
-                        {% for message in messages %}
-                            {% if message.tags == 'success' %}
-                                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-4 rounded flex items-center">
-                                    <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ message }}</span>
-                                </div>
-                            {% elif message.tags == 'error' %}
-                                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-4 rounded flex items-center">
-                                    <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ message }}</span>
-                                </div>
-                            {% elif message.tags == 'warning' %}
-                                <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 px-4 py-4 rounded flex items-center">
-                                    <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ message }}</span>
-                                </div>
-                            {% elif message.tags == 'info' %}
-                                <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 px-4 py-4 rounded flex items-center">
-                                    <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ message }}</span>
-                                </div>
-                            {% else %}
-                                <div class="bg-gray-50 border-l-4 border-gray-500 text-gray-700 px-4 py-4 rounded">
-                                    <span class="font-medium">{{ message }}</span>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                {% block content %}{% endblock %}
-            </div>
+        <main class="flex-1 overflow-auto bg-theme">
+            {% block content %}{% endblock %}
         </main>
     </div>
 
     <script>
+        // Dark mode toggle
+        const darkModeToggleMobile = document.getElementById('darkModeToggleMobile');
+        const darkModeToggleSidebar = document.getElementById('darkModeToggleSidebar');
+        const sunIconMobile = document.getElementById('sunIconMobile');
+        const moonIconMobile = document.getElementById('moonIconMobile');
+        const sunIconSidebar = document.getElementById('sunIconSidebar');
+        const moonIconSidebar = document.getElementById('moonIconSidebar');
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+            updateIcons(isDark);
+        }
+
+        function updateIcons(isDark) {
+            if (isDark) {
+                sunIconMobile.classList.remove('hidden');
+                moonIconMobile.classList.add('hidden');
+                sunIconSidebar.classList.remove('hidden');
+                moonIconSidebar.classList.add('hidden');
+            } else {
+                sunIconMobile.classList.add('hidden');
+                moonIconMobile.classList.remove('hidden');
+                sunIconSidebar.classList.add('hidden');
+                moonIconSidebar.classList.remove('hidden');
+            }
+        }
+
+        // Initialize dark mode from localStorage
+        const savedDarkMode = localStorage.getItem('darkMode');
+        if (savedDarkMode === 'true') {
+            document.documentElement.classList.add('dark');
+            updateIcons(true);
+        } else {
+            updateIcons(false);
+        }
+
+        darkModeToggleMobile.addEventListener('click', toggleDarkMode);
+        darkModeToggleSidebar.addEventListener('click', toggleDarkMode);
+
         // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const sidebar = document.getElementById('sidebar');

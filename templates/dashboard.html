@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}App Hub - Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="px-4 py-3 border-2 border-theme {% if message.tags == 'success' %}bg-[var(--alert-success-bg)]{% elif message.tags == 'error' %}bg-[var(--alert-error-bg)]{% else %}bg-gray-100 dark:bg-gray-800{% endif %}">
+            <p class="font-medium text-theme">{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Welcome -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-theme mb-2">Welcome to App Hub</h1>
+        <p class="text-muted">Manage your plugins and sites from one place</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-theme border-2 border-theme p-6 shadow-theme">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 border-2 border-theme p-3">
+                    <svg class="w-8 h-8 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-muted">Plugins</p>
+                    <p class="text-2xl font-bold text-theme">{{ all_plugins|length }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'plugin_upload' %}" class="inline-flex items-center button-theme px-5 py-3 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Upload Plugin
+                </a>
+            </div>
+        </div>
+        
+        <div class="bg-theme border-2 border-theme p-6 shadow-theme">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 border-2 border-theme p-3">
+                    <svg class="w-8 h-8 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-muted">Sites</p>
+                    <p class="text-2xl font-bold text-theme">{{ all_sites|length }}</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'site_upload' %}" class="inline-flex items-center button-theme px-5 py-3 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Upload Site
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plugins Section -->
+    {% if all_plugins %}
+    <div class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-theme">Your Plugins</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for app in all_plugins %}
+            <div class="bg-theme border-2 border-theme p-6 shadow-theme hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all duration-150">
+                <div class="flex items-start">
+                    {% if app.logo %}
+                    <img src="{{ app.logo.url }}" alt="{{ app.name }}" class="w-12 h-12 object-cover flex-shrink-0 border-2 border-theme">
+                    {% else %}
+                    <div class="w-12 h-12 border-2 border-theme flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-lg font-semibold text-theme">{{ app.name }}</h3>
+                        <p class="text-sm text-muted mt-1">{{ app.description|truncatechars:60 }}</p>
+                        <p class="text-xs text-muted mt-1">v{{ app.version }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <a href="{% url 'plugin_detail' app.slug %}" class="flex-1 text-center button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                        Open
+                    </a>
+                    <form method="post" action="{% url 'plugin_delete' app.slug %}" class="flex-1">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none" onclick="return confirm('Delete {{ app.name }}?')">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sites Section -->
+    {% if all_sites %}
+    <div class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-theme">Your Sites</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for app in all_sites %}
+            <div class="bg-theme border-2 border-theme p-6 shadow-theme hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all duration-150">
+                <div class="flex items-start">
+                    {% if app.logo %}
+                    <img src="{{ app.logo.url }}" alt="{{ app.name }}" class="w-12 h-12 object-cover flex-shrink-0 border-2 border-theme">
+                    {% else %}
+                    <div class="w-12 h-12 border-2 border-theme flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-lg font-semibold text-theme">{{ app.name }}</h3>
+                        <p class="text-sm text-muted mt-1">{{ app.description|truncatechars:60 }}</p>
+                        <p class="text-xs text-muted mt-1">v{{ app.version }}</p>
+                        {% if app.is_public %}
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium border-2 border-theme bg-[var(--alert-success-bg)] text-theme mt-2">
+                            Public
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <a href="{% url 'site_public' app.slug %}" target="_blank" class="flex-1 text-center button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                        View Public
+                    </a>
+                    <a href="{% url 'site_edit' app.slug %}" class="flex-1 text-center button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                        Edit
+                    </a>
+                </div>
+                <div class="flex gap-3 mt-3">
+                    <form method="post" action="{% url 'site_toggle_visibility' app.slug %}" class="flex-1">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
+                            {% if app.is_public %}Make Private{% else %}Make Public{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'site_delete' app.slug %}" class="flex-1">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none" onclick="return confirm('Delete {{ app.name }}?')">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

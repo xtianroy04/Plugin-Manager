@@ -6,23 +6,84 @@
     <title>Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
             font-family: 'Poppins', sans-serif;
         }
+        :root {
+            --bg-color: white;
+            --text-color: black;
+            --border-color: black;
+            --shadow-color: black;
+            --muted-color: #6b7280;
+            --button-bg: white;
+            --button-text: black;
+            --input-border: black;
+            --alert-error-bg: #fee2e2;
+        }
+        .dark {
+            --bg-color: #111827;
+            --text-color: white;
+            --border-color: white;
+            --shadow-color: white;
+            --muted-color: #9ca3af;
+            --button-bg: #111827;
+            --button-text: white;
+            --input-border: white;
+            --alert-error-bg: #7f1d1d;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .border-theme {
+            border-color: var(--border-color);
+        }
+        .text-theme {
+            color: var(--text-color);
+        }
+        .text-muted {
+            color: var(--muted-color);
+        }
+        .bg-theme {
+            background-color: var(--bg-color);
+        }
+        .shadow-theme {
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+        }
+        .button-theme {
+            border: 2px solid var(--border-color);
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            box-shadow: 4px 4px 0 0 var(--shadow-color);
+            transition: all 150ms ease;
+        }
+        .button-theme:hover {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+        .input-theme {
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .input-theme:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #fde047;
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+<body class="min-h-screen flex items-center justify-center">
     <div class="max-w-md w-full mx-auto">
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-theme border-2 border-theme overflow-hidden shadow-theme">
             <div class="px-6 py-8">
-                <h2 class="text-2xl font-bold text-center text-gray-800 mb-8">Login</h2>
+                <h2 class="text-2xl font-bold text-center text-theme mb-8">Login</h2>
                 <form method="post" class="space-y-6">
                     {% csrf_token %}
                     {% if form.errors %}
-                        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-4 rounded flex items-center">
+                        <div class="bg-[var(--alert-error-bg)] border-2 border-theme text-theme px-4 py-4 flex items-center">
                             <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -30,17 +91,17 @@
                         </div>
                     {% endif %}
                     <div>
-                        <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <label for="id_username" class="block text-sm font-medium text-theme mb-1">Username</label>
                         <input type="text" name="username" id="id_username" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                               class="w-full px-3 py-2 input-theme">
                     </div>
                     <div>
-                        <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label for="id_password" class="block text-sm font-medium text-theme mb-1">Password</label>
                         <div class="relative">
                             <input type="password" name="password" id="id_password" required
-                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                   class="w-full px-3 py-2 pr-10 input-theme">
                             <button type="button" id="togglePassword" 
-                                    class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-theme focus:outline-none">
                                 <!-- Eye Icon (Show) -->
                                 <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -55,7 +116,7 @@
                     </div>
                     <div>
                         <button type="submit"
-                                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                class="w-full button-theme px-4 py-2 font-semibold">
                             Login
                         </button>
                     </div>
@@ -65,6 +126,12 @@
     </div>
 
     <script>
+        // Dark mode init
+        const savedDarkMode = localStorage.getItem('darkMode');
+        if (savedDarkMode === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('id_password');
         const eyeIcon = document.getElementById('eyeIcon');

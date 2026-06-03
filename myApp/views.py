@@ -11,18 +11,29 @@ from django.utils.text import slugify
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from .models import Plugin
+from .models import App
 
 
-def get_plugin_context():
-    return {'plugins': Plugin.objects.all()}
+def get_app_context():
+    return {
+        'plugins': App.objects.filter(type='plugin', is_active=True),
+        'sites': App.objects.filter(type='site', is_active=True)
+    }
 
 
 @login_required
+def dashboard(request):
+    context = get_app_context()
+    context['all_plugins'] = App.objects.filter(type='plugin')
+    context['all_sites'] = App.objects.filter(type='site')
+    return render(request, 'dashboard.html', context)
+
+
+# ------------------ Plugin Views ------------------
+@login_required
 def plugin_list(request):
-    plugins = Plugin.objects.all()
-    context = get_plugin_context()
-    context['all_plugins'] = plugins
+    context = get_app_context()
+    context['all_plugins'] = App.objects.filter(type='plugin')
     return render(request, 'plugins/list.html', context)
 
 
@@ -30,217 +41,440 @@ def plugin_list(request):
 def plugin_upload(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
-        plugin_zip = request.FILES.get('plugin_zip')
+        app_zip = request.FILES.get('app_zip')
         logo = request.FILES.get('logo')
         description = request.POST.get('description', '').strip()
 
         # Validate required fields
         if not name:
-            return render(request, 'plugins/upload.html', {
-                'error': 'Plugin name is required.',
-                **get_plugin_context()
+            return render(request, 'apps/upload.html', {
+                'error': 'Name is required.',
+                'app_type': 'plugin',
+                **get_app_context()
             })
-        if not plugin_zip:
-            return render(request, 'plugins/upload.html', {
-                'error': 'Plugin zip file is required.',
-                **get_plugin_context()
+        if not app_zip:
+            return render(request, 'apps/upload.html', {
+                'error': 'Zip file is required.',
+                'app_type': 'plugin',
+                **get_app_context()
             })
 
         # Validate zip file
-        if not plugin_zip.name.endswith('.zip'):
-            return render(request, 'plugins/upload.html', {
+        if not app_zip.name.endswith('.zip'):
+            return render(request, 'apps/upload.html', {
                 'error': 'Please upload a valid .zip file.',
-                **get_plugin_context()
+                'app_type': 'plugin',
+                **get_app_context()
             })
 
         slug = slugify(name)
         if not slug:
-            return render(request, 'plugins/upload.html', {
-                'error': 'Invalid plugin name. Please use letters, numbers, and spaces.',
-                **get_plugin_context()
+            return render(request, 'apps/upload.html', {
+                'error': 'Invalid name. Please use letters, numbers, and spaces.',
+                'app_type': 'plugin',
+                **get_app_context()
             })
 
-        plugin_dir = settings.PLUGINS_ROOT / slug
+        app_dir = settings.APPS_ROOT / slug
 
-        if plugin_dir.exists():
-            return render(request, 'plugins/upload.html', {
+        if app_dir.exists():
+            return render(request, 'apps/upload.html', {
                 'error': f'A plugin named "{name}" already exists.',
-                **get_plugin_context()
+                'app_type': 'plugin',
+                **get_app_context()
             })
 
         try:
-            os.makedirs(plugin_dir, exist_ok=True)
+            os.makedirs(app_dir, exist_ok=True)
 
             # Validate zip file is not corrupted
             try:
-                with zipfile.ZipFile(plugin_zip, 'r') as zip_ref:
-                    # Test zip integrity
+                with zipfile.ZipFile(app_zip, 'r') as zip_ref:
                     bad_file = zip_ref.testzip()
                     if bad_file:
                         raise Exception(f'Corrupted file in zip: {bad_file}')
-                    zip_ref.extractall(plugin_dir)
+                    zip_ref.extractall(app_dir)
             except zipfile.BadZipFile:
                 raise Exception('Invalid or corrupted ZIP file.')
 
             # Check if __init__.py is at root or in a subfolder
-            init_file = plugin_dir / '__init__.py'
+            init_file = app_dir / '__init__.py'
             if not init_file.exists():
-                # Look in subfolders
-                for item in os.listdir(plugin_dir):
-                    subfolder = plugin_dir / item
+                for item in os.listdir(app_dir):
+                    subfolder = app_dir / item
                     if subfolder.is_dir():
                         test_init = subfolder / '__init__.py'
                         if test_init.exists():
-                            # Move files from subfolder to root
                             for file in os.listdir(subfolder):
                                 src = subfolder / file
-                                dst = plugin_dir / file
+                                dst = app_dir / file
                                 os.rename(src, dst)
                             os.rmdir(subfolder)
-                            init_file = plugin_dir / '__init__.py'
+                            init_file = app_dir / '__init__.py'
                             break
                 else:
-                    raise Exception('Plugin zip must contain __init__.py')
+                    raise Exception('Zip must contain __init__.py')
 
-            spec = importlib.util.spec_from_file_location('plugin_module', init_file)
-            plugin_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(plugin_module)
+            spec = importlib.util.spec_from_file_location('app_module', init_file)
+            app_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(app_module)
 
-            if not hasattr(plugin_module, 'Plugin'):
-                raise Exception('Plugin __init__.py must contain a Plugin class')
+            if not hasattr(app_module, 'Plugin'):
+                raise Exception('__init__.py must contain a Plugin class')
 
-            plugin_class = plugin_module.Plugin
+            app_class = app_module.Plugin
 
             # Validate required Plugin class attributes
             required_attrs = ['name', 'slug', 'version', 'description']
             for attr in required_attrs:
-                if not hasattr(plugin_class, attr):
+                if not hasattr(app_class, attr):
                     raise Exception(f'Plugin class missing required attribute: {attr}')
-                if not isinstance(getattr(plugin_class, attr), str):
+                if not isinstance(getattr(app_class, attr), str):
                     raise Exception(f'Plugin attribute "{attr}" must be a string')
 
-            # Validate required render method
-            if not hasattr(plugin_class, 'render') or not callable(getattr(plugin_class, 'render')):
+            if not hasattr(app_class, 'render') or not callable(getattr(app_class, 'render')):
                 raise Exception('Plugin class must have a "render" method')
 
-            plugin_config = {}
+            app_config = {}
 
-            config_file = plugin_dir / 'config.json'
+            config_file = app_dir / 'config.json'
             if config_file.exists():
                 with open(config_file, 'r') as f:
-                    plugin_config = json.load(f)
+                    app_config = json.load(f)
 
-            plugin = Plugin.objects.create(
+            app = App.objects.create(
                 name=name,
                 slug=slug,
-                version=getattr(plugin_class, 'version', '1.0'),
-                description=getattr(plugin_class, 'description', description),
-                plugin_dir=str(plugin_dir),
-                config=plugin_config
+                type='plugin',
+                version=getattr(app_class, 'version', '1.0'),
+                description=getattr(app_class, 'description', description),
+                app_dir=str(app_dir),
+                config=app_config,
+                is_public=False
             )
 
             # Use uploaded logo if provided, otherwise check ZIP for logo
             if logo:
-                plugin.logo = logo
-                plugin.save()
+                app.logo = logo
+                app.save()
             else:
-                # Check for logo files in the plugin directory
                 logo_extensions = ['png', 'jpg', 'jpeg', 'svg', 'gif']
                 for ext in logo_extensions:
-                    logo_path = plugin_dir / f'logo.{ext}'
+                    logo_path = app_dir / f'logo.{ext}'
                     if logo_path.exists():
                         from django.core.files import File
                         with open(logo_path, 'rb') as f:
-                            plugin.logo.save(f'logo.{ext}', File(f))
+                            app.logo.save(f'logo.{ext}', File(f))
                         break
 
             messages.success(request, f'Plugin "{name}" uploaded successfully!')
-            return redirect('plugin_list')
+            return redirect('dashboard')
 
         except Exception as e:
             import shutil
-            if plugin_dir.exists():
-                shutil.rmtree(plugin_dir)
-            return render(request, 'plugins/upload.html', {
+            if app_dir.exists():
+                shutil.rmtree(app_dir)
+            return render(request, 'apps/upload.html', {
                 'error': str(e),
-                **get_plugin_context()
+                'app_type': 'plugin',
+                **get_app_context()
             })
 
-    return render(request, 'plugins/upload.html', get_plugin_context())
+    return render(request, 'apps/upload.html', {
+        'app_type': 'plugin',
+        **get_app_context()
+    })
 
 
 @login_required
 def plugin_detail(request, slug):
-    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
-    init_file = Path(plugin.plugin_dir) / '__init__.py'
+    app = get_object_or_404(App, slug=slug, type='plugin', is_active=True)
+    init_file = Path(app.app_dir) / '__init__.py'
 
-    spec = importlib.util.spec_from_file_location('plugin_module', init_file)
-    plugin_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(plugin_module)
-    plugin_class = plugin_module.Plugin
-    plugin_instance = plugin_class()
+    spec = importlib.util.spec_from_file_location('app_module', init_file)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    app_class = app_module.Plugin
+    app_instance = app_class()
 
-    plugin_content = ''
-    if hasattr(plugin_instance, 'render'):
-        plugin_content = plugin_instance.render(request, plugin.config)
+    app_content = ''
+    if hasattr(app_instance, 'render'):
+        app_content = app_instance.render(request, app.config)
 
-    context = get_plugin_context()
-    context['plugin'] = plugin
-    context['plugin_content'] = plugin_content
+    context = get_app_context()
+    context['app'] = app
+    context['app_content'] = app_content
     return render(request, 'plugins/detail.html', context)
 
 
 @login_required
 def plugin_delete(request, slug):
-    plugin = get_object_or_404(Plugin, slug=slug)
+    app = get_object_or_404(App, slug=slug, type='plugin')
 
     if request.method == 'POST':
         import shutil
-        plugin_name = plugin.name
-        plugin_dir = Path(plugin.plugin_dir)
-        if plugin_dir.exists():
-            shutil.rmtree(plugin_dir)
-        plugin.delete()
-        messages.success(request, f'Plugin "{plugin_name}" deleted successfully!')
-        return redirect('plugin_list')
+        app_name = app.name
+        app_dir = Path(app.app_dir)
+        if app_dir.exists():
+            shutil.rmtree(app_dir)
+        app.delete()
+        messages.success(request, f'Plugin "{app_name}" deleted successfully!')
+        return redirect('dashboard')
 
-    context = get_plugin_context()
-    context['plugin'] = plugin
-    return render(request, 'plugins/delete.html', context)
+    context = get_app_context()
+    context['app'] = app
+    return render(request, 'apps/delete.html', context)
 
 
-# Generic API endpoints for ALL plugins to save/load config
+# ------------------ Site Views ------------------
+def site_public(request, slug):
+    app = get_object_or_404(App, slug=slug, type='site', is_active=True)
+    
+    # Check if site is private and user not logged in
+    if not app.is_public and not request.user.is_authenticated:
+        messages.warning(request, 'This site is private. Please log in to view it.')
+        return redirect('login')
+
+    init_file = Path(app.app_dir) / '__init__.py'
+
+    spec = importlib.util.spec_from_file_location('app_module', init_file)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    app_class = app_module.Site if hasattr(app_module, 'Site') else app_module.Plugin
+    app_instance = app_class()
+
+    app_content = ''
+    if hasattr(app_instance, 'render'):
+        app_content = app_instance.render(request, app.config, is_editing=False)
+
+    return render(request, 'sites/public.html', {
+        'app': app,
+        'app_content': app_content,
+        'user': request.user
+    })
+
+
+@login_required
+def site_edit(request, slug):
+    app = get_object_or_404(App, slug=slug, type='site', is_active=True)
+    init_file = Path(app.app_dir) / '__init__.py'
+
+    spec = importlib.util.spec_from_file_location('app_module', init_file)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    app_class = app_module.Site if hasattr(app_module, 'Site') else app_module.Plugin
+    app_instance = app_class()
+
+    app_content = ''
+    if hasattr(app_instance, 'render'):
+        app_content = app_instance.render(request, app.config, is_editing=True)
+
+    context = get_app_context()
+    context['app'] = app
+    context['app_content'] = app_content
+    return render(request, 'sites/edit.html', context)
+
+
+@login_required
+def site_upload(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        app_zip = request.FILES.get('app_zip')
+        logo = request.FILES.get('logo')
+        description = request.POST.get('description', '').strip()
+
+        if not name:
+            return render(request, 'apps/upload.html', {
+                'error': 'Name is required.',
+                'app_type': 'site',
+                **get_app_context()
+            })
+        if not app_zip:
+            return render(request, 'apps/upload.html', {
+                'error': 'Zip file is required.',
+                'app_type': 'site',
+                **get_app_context()
+            })
+
+        if not app_zip.name.endswith('.zip'):
+            return render(request, 'apps/upload.html', {
+                'error': 'Please upload a valid .zip file.',
+                'app_type': 'site',
+                **get_app_context()
+            })
+
+        slug = slugify(name)
+        if not slug:
+            return render(request, 'apps/upload.html', {
+                'error': 'Invalid name. Please use letters, numbers, and spaces.',
+                'app_type': 'site',
+                **get_app_context()
+            })
+
+        app_dir = settings.APPS_ROOT / slug
+
+        if app_dir.exists():
+            return render(request, 'apps/upload.html', {
+                'error': f'A site named "{name}" already exists.',
+                'app_type': 'site',
+                **get_app_context()
+            })
+
+        try:
+            os.makedirs(app_dir, exist_ok=True)
+
+            try:
+                with zipfile.ZipFile(app_zip, 'r') as zip_ref:
+                    bad_file = zip_ref.testzip()
+                    if bad_file:
+                        raise Exception(f'Corrupted file in zip: {bad_file}')
+                    zip_ref.extractall(app_dir)
+            except zipfile.BadZipFile:
+                raise Exception('Invalid or corrupted ZIP file.')
+
+            init_file = app_dir / '__init__.py'
+            if not init_file.exists():
+                for item in os.listdir(app_dir):
+                    subfolder = app_dir / item
+                    if subfolder.is_dir():
+                        test_init = subfolder / '__init__.py'
+                        if test_init.exists():
+                            for file in os.listdir(subfolder):
+                                src = subfolder / file
+                                dst = app_dir / file
+                                os.rename(src, dst)
+                            os.rmdir(subfolder)
+                            init_file = app_dir / '__init__.py'
+                            break
+                else:
+                    raise Exception('Zip must contain __init__.py')
+
+            spec = importlib.util.spec_from_file_location('app_module', init_file)
+            app_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(app_module)
+
+            if not (hasattr(app_module, 'Site') or hasattr(app_module, 'Plugin')):
+                raise Exception('__init__.py must contain a Site or Plugin class')
+
+            app_class = app_module.Site if hasattr(app_module, 'Site') else app_module.Plugin
+
+            required_attrs = ['name', 'slug', 'version', 'description']
+            for attr in required_attrs:
+                if not hasattr(app_class, attr):
+                    raise Exception(f'Class missing required attribute: {attr}')
+                if not isinstance(getattr(app_class, attr), str):
+                    raise Exception(f'Attribute "{attr}" must be a string')
+
+            if not hasattr(app_class, 'render') or not callable(getattr(app_class, 'render')):
+                raise Exception('Class must have a "render" method')
+
+            app_config = {}
+
+            config_file = app_dir / 'config.json'
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    app_config = json.load(f)
+
+            app = App.objects.create(
+                name=name,
+                slug=slug,
+                type='site',
+                version=getattr(app_class, 'version', '1.0'),
+                description=getattr(app_class, 'description', description),
+                app_dir=str(app_dir),
+                config=app_config,
+                is_public=True
+            )
+
+            if logo:
+                app.logo = logo
+                app.save()
+            else:
+                logo_extensions = ['png', 'jpg', 'jpeg', 'svg', 'gif']
+                for ext in logo_extensions:
+                    logo_path = app_dir / f'logo.{ext}'
+                    if logo_path.exists():
+                        from django.core.files import File
+                        with open(logo_path, 'rb') as f:
+                            app.logo.save(f'logo.{ext}', File(f))
+                        break
+
+            messages.success(request, f'Site "{name}" uploaded successfully!')
+            return redirect('dashboard')
+
+        except Exception as e:
+            import shutil
+            if app_dir.exists():
+                shutil.rmtree(app_dir)
+            return render(request, 'apps/upload.html', {
+                'error': str(e),
+                'app_type': 'site',
+                **get_app_context()
+            })
+
+    return render(request, 'apps/upload.html', {
+        'app_type': 'site',
+        **get_app_context()
+    })
+
+
+@login_required
+def site_delete(request, slug):
+    app = get_object_or_404(App, slug=slug, type='site')
+
+    if request.method == 'POST':
+        import shutil
+        app_name = app.name
+        app_dir = Path(app.app_dir)
+        if app_dir.exists():
+            shutil.rmtree(app_dir)
+        app.delete()
+        messages.success(request, f'Site "{app_name}" deleted successfully!')
+        return redirect('dashboard')
+
+    context = get_app_context()
+    context['app'] = app
+    return render(request, 'apps/delete.html', context)
+
+
+@login_required
+def site_toggle_visibility(request, slug):
+    app = get_object_or_404(App, slug=slug, type='site')
+    app.is_public = not app.is_public
+    app.save()
+    messages.success(request, f'Site "{app.name}" is now {"public" if app.is_public else "private"}!')
+    return redirect('dashboard')
+
+
+# ------------------ Generic API Endpoints for ALL Apps ------------------
 @login_required
 @require_http_methods(["GET"])
-def plugin_get_config(request, slug):
-    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
-    return JsonResponse(plugin.config)
+def app_get_config(request, slug):
+    app = get_object_or_404(App, slug=slug, is_active=True)
+    return JsonResponse(app.config)
 
 
 @login_required
-@csrf_exempt
 @require_http_methods(["POST"])
-def plugin_set_config(request, slug):
-    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
+def app_set_config(request, slug):
+    app = get_object_or_404(App, slug=slug, is_active=True)
     try:
         data = json.loads(request.body)
-        plugin.config = data
-        plugin.save()
-        return JsonResponse({'success': True, 'config': plugin.config})
+        app.config = data
+        app.save()
+        return JsonResponse({'success': True, 'config': app.config})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 @login_required
-@csrf_exempt
 @require_http_methods(["POST"])
-def plugin_update_config(request, slug):
-    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
+def app_update_config(request, slug):
+    app = get_object_or_404(App, slug=slug, is_active=True)
     try:
         data = json.loads(request.body)
-        # Merge new data into existing config
-        plugin.config.update(data)
-        plugin.save()
-        return JsonResponse({'success': True, 'config': plugin.config})
+        app.config.update(data)
+        app.save()
+        return JsonResponse({'success': True, 'config': app.config})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)

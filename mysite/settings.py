@@ -21,9 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Plugins directory
-PLUGINS_ROOT = MEDIA_ROOT / 'plugins'
-os.makedirs(PLUGINS_ROOT, exist_ok=True)
+# Apps directory (for plugins and sites)
+APPS_ROOT = MEDIA_ROOT / 'apps'
+os.makedirs(APPS_ROOT, exist_ok=True)
 
 
 # Quick-start development settings - unsuitable for production
