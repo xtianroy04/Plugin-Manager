@@ -5,13 +5,15 @@ import importlib.util
 from pathlib import Path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordChangeView, PasswordChangeDoneView
 from django.contrib import messages
 from django.conf import settings
 from django.utils.text import slugify
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from .models import App
+from django.utils.decorators import method_decorator
+from .models import App, ActivityLog
 
 
 def get_app_context():
@@ -168,6 +170,11 @@ def plugin_upload(request):
                         break
 
             messages.success(request, f'Plugin "{name}" uploaded successfully!')
+            ActivityLog.objects.create(
+                user=request.user,
+                action='plugin_upload',
+                details=f'Uploaded plugin: {name}'
+            )
             return redirect('dashboard')
 
         except Exception as e:
@@ -219,6 +226,11 @@ def plugin_delete(request, slug):
             shutil.rmtree(app_dir)
         app.delete()
         messages.success(request, f'Plugin "{app_name}" deleted successfully!')
+        ActivityLog.objects.create(
+            user=request.user,
+            action='plugin_delete',
+            details=f'Deleted plugin: {app_name}'
+        )
         return redirect('dashboard')
 
     context = get_app_context()
@@ -400,6 +412,11 @@ def site_upload(request):
                         break
 
             messages.success(request, f'Site "{name}" uploaded successfully!')
+            ActivityLog.objects.create(
+                user=request.user,
+                action='site_upload',
+                details=f'Uploaded site: {name}'
+            )
             return redirect('dashboard')
 
         except Exception as e:
@@ -430,6 +447,11 @@ def site_delete(request, slug):
             shutil.rmtree(app_dir)
         app.delete()
         messages.success(request, f'Site "{app_name}" deleted successfully!')
+        ActivityLog.objects.create(
+            user=request.user,
+            action='site_delete',
+            details=f'Deleted site: {app_name}'
+        )
         return redirect('dashboard')
 
     context = get_app_context()
@@ -478,3 +500,57 @@ def app_update_config(request, slug):
         return JsonResponse({'success': True, 'config': app.config})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def app_custom_api(request, slug, method_name):
+    app = get_object_or_404(App, slug=slug, is_active=True)
+    
+    init_file = Path(app.app_dir) / '__init__.py'
+    spec = importlib.util.spec_from_file_location('app_module', init_file)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    
+    app_class = app_module.Plugin if hasattr(app_module, 'Plugin') else app_module.Site
+    app_instance = app_class()
+    
+    method_name = f'api_{method_name}'
+    if hasattr(app_instance, method_name) and callable(getattr(app_instance, method_name)):
+        method = getattr(app_instance, method_name)
+        try:
+            data = json.loads(request.body) if request.body else {}
+            result = method(request, app.config, data)
+            return JsonResponse(result)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'success': False, 'error': f'Method {method_name} not found'}, status=404)
+
+
+@login_required
+def activity_log(request):
+    logs = ActivityLog.objects.filter(user=request.user)[:100]
+    context = get_app_context()
+    context['logs'] = logs
+    return render(request, 'activity_log.html', context)
+
+
+@method_decorator(login_required, name='dispatch')
+class CustomPasswordChangeView(PasswordChangeView):
+    template_name = 'registration/password_change.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_app_context())
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class CustomPasswordChangeDoneView(PasswordChangeDoneView):
+    template_name = 'registration/password_change_done.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_app_context())
+        return context

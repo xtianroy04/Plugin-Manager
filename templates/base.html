@@ -126,6 +126,14 @@
                             Dashboard
                         </a>
                     </li>
+                    <li>
+                        <a href="{% url 'activity_log' %}" class="block px-4 py-2 rounded-none border-2 border-transparent hover:border-theme text-theme font-medium">
+                            <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Activity Log
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="mb-6">
@@ -193,6 +201,9 @@
                 </div>
             </nav>
             <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-theme bg-theme">
+                <a href="{% url 'password_change' %}" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none mb-2 block text-center">
+                    Change Password
+                </a>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="w-full button-theme px-4 py-2 font-semibold focus:ring-2 focus:ring-yellow-300 focus:outline-none">
