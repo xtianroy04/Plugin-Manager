@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ plugin.name }}{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                {% if plugin.logo %}
+                    <img src="{{ plugin.logo.url }}" alt="{{ plugin.name }}" class="w-12 h-12 rounded mr-4">
+                {% endif %}
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">{{ plugin.name }}</h1>
+                    <p class="text-gray-500">v{{ plugin.version }}</p>
+                </div>
+            </div>
+            <div class="space-x-2">
+                <a href="{% url 'plugin_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Back to Dashboard
+                </a>
+                <form method="post" action="{% url 'plugin_delete' plugin.slug %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700" onclick="return confirm('Are you sure you want to delete this plugin?')">
+                        Delete Plugin
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        {% if plugin.description %}
+            <p class="text-gray-600 mb-6">{{ plugin.description }}</p>
+        {% endif %}
+        <div class="border-t pt-6">
+            {{ plugin_content|safe }}
+        </div>
+    </div>
+{% endblock %}
