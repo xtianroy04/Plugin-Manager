@@ -448,10 +448,47 @@ Before uploading, verify your plugin passes this checklist:
 
 ---
 
+## Generic Plugin Config API (Save to Database)
+
+Any plugin can use these generic API endpoints to save/load its config (including dynamic data like todo tasks!) to the Django database instead of just using localStorage!
+
+### API Endpoints
+
+| Endpoint | Method | What it does |
+|----------|--------|--------------|
+| `/{slug}/api/config/` | GET | Returns the full config dict for the plugin |
+| `/{slug}/api/config/set/` | POST | Replaces the entire config with the JSON body you send |
+| `/{slug}/api/config/update/` | POST | Updates (merges) existing config with the JSON body you send |
+
+All endpoints require you to be logged in.
+
+### How to Use in Your Plugin
+
+1. Load initial tasks from config (passed to `render()`):
+```python
+def render(self, request, config):
+    tasks = config.get('tasks', [])
+    tasks_json = json.dumps(tasks)
+    # ... rest of your code
+```
+
+2. Save to database from JS:
+```javascript
+function saveConfig() {
+    fetch("/todo-app/api/config/set/", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({tasks: yourData})
+    });
+}
+```
+
+---
+
 ## Tips
 
 - **Tailwind CSS is available** — use Tailwind utility classes freely; no CDN link needed in your plugin
-- **Use `localStorage`** for client-side data persistence across page reloads
+- **Choose your persistence**: Use `localStorage` for simple client-side data, or the **Generic Config API** for database-persisted data shared across sessions/logins
 - **Use `data-*` attributes + event delegation** instead of `onclick` for reliable event handling
 - **Prefix everything** — IDs, localStorage keys, global variables — with your plugin slug to prevent conflicts
 - **Keep it self-contained** — your plugin's entire UI lives in the string returned by `render()`

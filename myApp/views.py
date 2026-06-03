@@ -8,6 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 from django.utils.text import slugify
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from .models import Plugin
 
 
@@ -204,3 +207,40 @@ def plugin_delete(request, slug):
     context = get_plugin_context()
     context['plugin'] = plugin
     return render(request, 'plugins/delete.html', context)
+
+
+# Generic API endpoints for ALL plugins to save/load config
+@login_required
+@require_http_methods(["GET"])
+def plugin_get_config(request, slug):
+    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
+    return JsonResponse(plugin.config)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def plugin_set_config(request, slug):
+    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
+    try:
+        data = json.loads(request.body)
+        plugin.config = data
+        plugin.save()
+        return JsonResponse({'success': True, 'config': plugin.config})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def plugin_update_config(request, slug):
+    plugin = get_object_or_404(Plugin, slug=slug, is_active=True)
+    try:
+        data = json.loads(request.body)
+        # Merge new data into existing config
+        plugin.config.update(data)
+        plugin.save()
+        return JsonResponse({'success': True, 'config': plugin.config})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
