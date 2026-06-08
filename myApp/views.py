@@ -5,14 +5,19 @@ import importlib.util
 from pathlib import Path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordChangeView, PasswordChangeDoneView
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.views import PasswordChangeView, PasswordChangeDoneView, LoginView
+from django.contrib.auth import logout
 from django.contrib import messages
 from django.conf import settings
 from django.utils.text import slugify
+from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
+from django.contrib.sessions.models import Session
+from django.contrib.auth import get_user_model
 from .models import App, ActivityLog
 
 
@@ -554,3 +559,76 @@ class CustomPasswordChangeDoneView(PasswordChangeDoneView):
         context = super().get_context_data(**kwargs)
         context.update(get_app_context())
         return context
+
+
+def get_active_sessions_for_user(user):
+    """Get all active sessions for a given user"""
+    active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
+    user_id = user._meta.pk.value_to_string(user)
+    user_sessions = []
+    for session in active_sessions:
+        data = session.get_decoded()
+        if data.get('_auth_user_id') == user_id:
+            user_sessions.append(session)
+    return user_sessions
+
+
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_app_context())
+        return context
+    
+    def form_valid(self, form):
+        # Get user trying to login
+        user = form.get_user()
+        
+        # Check for existing active sessions
+        active_sessions = get_active_sessions_for_user(user)
+        
+        # Remove current session from check (if any)
+        if self.request.session.session_key:
+            active_sessions = [s for s in active_sessions if s.session_key != self.request.session.session_key]
+        
+        # Check if user submitted 'take over'
+        if 'take_over' in self.request.POST:
+            # Invalidate all other sessions
+            for session in active_sessions:
+                session.delete()
+            # Log the login activity
+            ActivityLog.objects.create(
+                user=user,
+                action='login',
+                details=f'Took over existing session'
+            )
+            return super().form_valid(form)
+        
+        # If there are existing active sessions
+        if active_sessions:
+            # Show the prompt
+            return self.render_to_response(self.get_context_data(
+                form=form,
+                show_takeover_prompt=True,
+                active_session_count=len(active_sessions)
+            ))
+        
+        # Log the normal login activity
+        ActivityLog.objects.create(
+            user=user,
+            action='login',
+            details='Normal login'
+        )
+        return super().form_valid(form)
+
+
+class CustomLogoutView(auth_views.LogoutView):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            ActivityLog.objects.create(
+                user=request.user,
+                action='logout',
+                details='User logged out'
+            )
+        return super().dispatch(request, *args, **kwargs)

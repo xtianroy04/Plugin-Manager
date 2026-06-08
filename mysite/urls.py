@@ -24,8 +24,8 @@ from myApp import views as my_app_views
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
-    path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/login/', my_app_views.CustomLoginView.as_view(), name='login'),
+    path('accounts/logout/', my_app_views.CustomLogoutView.as_view(), name='logout'),
     path('accounts/password-change/', my_app_views.CustomPasswordChangeView.as_view(), name='password_change'),
     path('accounts/password-change/done/', my_app_views.CustomPasswordChangeDoneView.as_view(), name='password_change_done'),
     path('', include('myApp.urls')),
