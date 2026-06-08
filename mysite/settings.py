@@ -33,9 +33,9 @@ os.makedirs(APPS_ROOT, exist_ok=True)
 SECRET_KEY = 'django-insecure-5ho7uz37bsxk2cm*llzn15@d7t3i3o5f9_mx8!zj#1wq(wb^p='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['christian01.pythonanywhere.com']
 
 
 # Application definition
